@@ -15,7 +15,7 @@
 #ifndef WAMV_CONTROL__WAMV_HARDWARE_HPP_
 #define WAMV_CONTROL__WAMV_HARDWARE_HPP_
 
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
 #include <hardware_interface/system_interface.hpp>
 #else
 #include <hardware_interface/base_interface.hpp>
@@ -24,7 +24,7 @@
 #include <hardware_interface/hardware_info.hpp>
 #include <hardware_interface/system_interface.hpp>
 #include <hardware_interface/types/hardware_interface_return_values.hpp>
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #else
 #include <hardware_interface/types/hardware_interface_status_values.hpp>
@@ -42,7 +42,7 @@ using hardware_interface::return_type;
 namespace wamv_control
 {
 class WamVHardware
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
 : public hardware_interface::SystemInterface
 #else
 : public hardware_interface::BaseInterface<hardware_interface::SystemInterface>
@@ -54,7 +54,7 @@ public:
   WAMV_CONTROL_PUBLIC
   ~WamVHardware();
 
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
   WAMV_CONTROL_PUBLIC
   rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn on_init(
     const hardware_interface::HardwareInfo & info) override;
@@ -69,19 +69,23 @@ public:
   WAMV_CONTROL_PUBLIC
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-#ifndef GALACTIC
-  WAMV_CONTROL_PUBLIC
-  return_type start() override;
+#if defined(HUMBLE)
 
   WAMV_CONTROL_PUBLIC
-  return_type stop() override;
-#endif
+  return_type read(const rclcpp::Time & time, const rclcpp::Duration & period) override;
+
+  WAMV_CONTROL_PUBLIC
+  return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
+
+#else
 
   WAMV_CONTROL_PUBLIC
   return_type read() override;
 
   WAMV_CONTROL_PUBLIC
   return_type write() override;
+
+#endif
 
 private:
   std::shared_ptr<WamVDriver> driver_;

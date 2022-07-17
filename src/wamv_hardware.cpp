@@ -25,14 +25,14 @@ namespace wamv_control
 {
 WamVHardware::~WamVHardware() {}
 
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn WamVHardware::on_init(
   const hardware_interface::HardwareInfo & info)
 #else
 return_type WamVHardware::configure(const hardware_interface::HardwareInfo & info)
 #endif
 {
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
   if (
     SystemInterface::on_init(info) !=
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS) {
@@ -40,7 +40,7 @@ return_type WamVHardware::configure(const hardware_interface::HardwareInfo & inf
   }
 #else
   if (configure_default(info) != hardware_interface::return_type::OK) {
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
 #else
     return return_type::ERROR;
@@ -69,13 +69,13 @@ return_type WamVHardware::configure(const hardware_interface::HardwareInfo & inf
   try {
     driver_ = std::make_shared<WamVDriver>(thruster_ip_address, thruster_port, enable_dummy);
   } catch (const std::runtime_error & e) {
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::ERROR;
 #else
     return return_type::ERROR;
 #endif
   }
-#if GALACTIC
+#if defined(GALACTIC) || defined(HUMBLE)
   return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 #else
   return return_type::OK;
@@ -102,7 +102,7 @@ std::vector<hardware_interface::CommandInterface> WamVHardware::export_command_i
   return command_interfaces;
 }
 
-#ifndef GALACTIC
+#if defined(GALACTIC)
 return_type WamVHardware::start()
 {
   status_ = hardware_interface::status::STARTED;
@@ -115,6 +115,28 @@ return_type WamVHardware::stop()
   return return_type::OK;
 }
 #endif
+
+#if defined(HUMBLE)
+
+return_type WamVHardware::read(const rclcpp::Time & time, const rclcpp::Duration & period)
+{
+  // RCLCPP_INFO_STREAM(rclcpp::get_logger("WamVHardware"), __FILE__ << "," << __LINE__);
+  return return_type::OK;
+}
+
+return_type WamVHardware::write(const rclcpp::Time & time, const rclcpp::Duration & period)
+{
+  driver_->setThrust(Motor::THRUSTER_LEFT, left_thrust_cmd_);
+  driver_->setThrust(Motor::TURUSTER_RIGHT, right_thrust_cmd_);
+  if (driver_->sendCommand()) {
+    return return_type::OK;
+  } else {
+    RCLCPP_ERROR_STREAM(rclcpp::get_logger("WamVHardware"), "failed to send command.");
+    return return_type::ERROR;
+  }
+}
+
+#else
 
 return_type WamVHardware::read()
 {
@@ -133,6 +155,8 @@ return_type WamVHardware::write()
     return return_type::ERROR;
   }
 }
+#endif
+
 }  // namespace wamv_control
 
 #include "pluginlib/class_list_macros.hpp"
